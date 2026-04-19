@@ -105,74 +105,67 @@ document.addEventListener('DOMContentLoaded', () => {
         sensorChart.update();
     }
 
-    // 2. MQTT Variables & Elements
-    const brokerUrl = 'wss://broker.hivemq.com:8000/mqtt';
-    const topicTemp = 'letiendat2711/iot/temp';
-    const topicHum = 'letiendat2711/iot/hum';
+    // 2. Firebase Variables & Elements
+    const firebaseUrl = 'https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app/sensor.json';
 
     const tempValueEl = document.getElementById('temp-value');
     const humValueEl = document.getElementById('hum-value');
     const statusIndicator = document.getElementById('mqtt-status');
     const statusText = document.getElementById('mqtt-status-text');
 
-    // Lưu tạm thời giá trị nhận được cùng thời điểm
-    let latestTemp = null;
-    let latestHum = null;
+    // Biến lưu trữ giá trị cũ để tránh vẽ biểu đồ liên tục nếu dữ liệu không đổi
+    let lastTemp = null;
+    let lastHum = null;
 
-    // 3. Connect to MQTT Broker
-    const client = mqtt.connect(brokerUrl);
-
-    client.on('connect', () => {
-        console.log('Connected to MQTT Broker via WebSockets');
-        statusIndicator.className = 'status-indicator connected';
-        statusText.textContent = 'Đã kết nối Broker';
-        
-        // Subscribe to topics
-        client.subscribe([topicTemp, topicHum], (err) => {
-            if (!err) {
-                console.log(`Subscribed to: ${topicTemp}, ${topicHum}`);
+    // 3. Hàm lấy dữ liệu từ Firebase
+    async function fetchFirebaseData() {
+        try {
+            // Lấy dữ liệu dạng JSON (Thêm cache: no-store để không bị lưu rác dữ liệu cũ trên trình duyệt)
+            const response = await fetch(firebaseUrl, { cache: "no-store" });
+            
+            if (!response.ok) {
+                throw new Error("HTTP error " + response.status);
             }
-        });
-    });
+            
+            const data = await response.json();
 
-    client.on('error', (error) => {
-        console.error('MQTT Connection Error: ', error);
-        statusIndicator.className = 'status-indicator disconnected';
-        statusText.textContent = 'Lỗi kết nối';
-    });
+            // Cập nhật trạng thái
+            statusIndicator.className = 'status-indicator connected';
+            statusText.textContent = 'Đã kết nối Firebase (HTTP)';
 
-    client.on('offline', () => {
-        statusIndicator.className = 'status-indicator disconnected';
-        statusText.textContent = 'Mất kết nối';
-    });
+            // Kiểm tra dữ liệu có tồn tại không
+            if (data && data.temp !== undefined && data.hum !== undefined) {
+                const temp = parseFloat(data.temp);
+                const hum = parseFloat(data.hum);
 
-    // 4. Handle incoming messages
-    client.on('message', (topic, message) => {
-        const value = parseFloat(message.toString());
-        if(isNaN(value)) return;
+                // Cập nhật giao diện số
+                tempValueEl.textContent = temp.toFixed(1);
+                humValueEl.textContent = hum.toFixed(1);
 
-        const now = new Date();
-        const timeLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                // Hiệu ứng cảnh báo nếu nhiêt độ cao
+                if(temp >= 33) tempValueEl.classList.add('danger-value');
+                else tempValueEl.classList.remove('danger-value');
 
-        if (topic === topicTemp) {
-            tempValueEl.textContent = value.toFixed(1);
-            latestTemp = value;
-            // Hiệu ứng cảnh báo nếu nhiêt độ cao
-            if(value >= 33) tempValueEl.classList.add('danger-value');
-            else tempValueEl.classList.remove('danger-value');
-        } else if (topic === topicHum) {
-            humValueEl.textContent = value.toFixed(1);
-            latestHum = value;
+                // Vẽ chart nếu dữ liệu mới có sự thay đổi (Bảo vệ hiệu năng web)
+                if(temp !== lastTemp || hum !== lastHum) {
+                    const now = new Date();
+                    const timeLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                    
+                    updateChart(timeLabel, temp, hum);
+                    
+                    lastTemp = temp;
+                    lastHum = hum;
+                }
+            }
+        } catch (error) {
+            console.error('Firebase Fetch Error: ', error);
+            statusIndicator.className = 'status-indicator disconnected';
+            statusText.textContent = 'Lỗi kết nối Firebase';
         }
+    }
 
-        // Nếu nhận đủ cả hai giá trị thì vẽ biểu đồ 
-        // (Do ESP32 sẽ publish gần như đồng thời)
-        if(latestTemp !== null && latestHum !== null) {
-            updateChart(timeLabel, latestTemp, latestHum);
-            // Reset 
-            latestTemp = null;
-            latestHum = null;
-        }
-    });
+    // 4. Khởi chạy
+    fetchFirebaseData(); // Gọi ngay khi load trang
+    setInterval(fetchFirebaseData, 3000); // Lặp lại mỗi 3 giây tương ứng độ trễ ESP32
 
 });
