@@ -9,38 +9,38 @@ const char* password = "0778844247zalo";
 // Đường dẫn nhận dữ liệu (ĐÚNG CHUẨN FIREBASE API)
 const char* serverName = "https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app/sensor.json";
 
-// Root CA được định dạng ĐÚNG CẤU TRÚC C++
+// Root CA của chứng chỉ Google Trust Services (GTS Root R1) dùng cho Firebase
 const char* root_ca = \
 "-----BEGIN CERTIFICATE-----\n" \
-"MIIFRDCCBCygAwIBAgISBY1Sq3AtD/S2K3R6iv48O7jaMA0GCSqGSIb3DQEBCwUA\n" \
-"MDMxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQwwCgYDVQQD\n" \
-"EwNSMTIwHhcNMjYwNDA2MjMzMjM2WhcNMjYwNzA1MjMzMjM1WjAWMRQwEgYDVQQD\n" \
-"DAsqLmdpdGh1Yi5pbzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOdZ\n" \
-"q8I8GHk1g+bKQwY6CYeOw/ZxO3Uv6bGkk3KzLPPKWqLbae+aZIbXLtd1OVyhFeFT\n" \
-"jOR8+SxEUE5TpcMSUPUMPQJ54+CO9KoovK5rWiPPpckDoihI3t2HpxLheZPv3mv3\n" \
-"smG9SEnZlCDsqFEspbTYUsz8IZwkTYUanSh5jetCumoQ3tDJAQ4NlbQIro1xDFxi\n" \
-"qkDt6bYHffznWRsY3LbIxnx2K2sQGgg30/eqtT/nL5uXqlJmK6n1nPtTVXGUWsOl\n" \
-"XvvHRkZe1/INk20NCN4SqK21CEwcth9ALqrr/qIv0S/jAUeSXTXXKQbOwB12caao\n" \
-"aACXw3n9ztyCJz9/om0CAwEAAaOCAm0wggJpMA4GA1UdDwEB/wQEAwIFoDATBgNV\n" \
-"HSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBR0mMdbLJil\n" \
-"eTnlyukk8i8OUz8l+DAfBgNVHSMEGDAWgBQAtSnyLY5vMeibTK14Pvrc6QzR0jAz\n" \
-"BggrBgEFBQcBAQQnMCUwIwYIKwYBBQUHMAKGF2h0dHA6Ly9yMTIuaS5sZW5jci5v\n" \
-"cmcvMGsGA1UdEQRkMGKCDCouZ2l0aHViLmNvbYILKi5naXRodWIuaW+CFyouZ2l0\n" \
-"aHVidXNlcmNvbnRlbnQuY29tggpnaXRodWIuY29tgglnaXRodWIuaW+CFWdpdGh1\n" \
-"YnVzZXJjb250ZW50LmNvbTATBgNVHSAEDDAKMAgGBmeBDAECATAuBgNVHR8EJzAl\n" \
-"MCOgIaAfhh1odHRwOi8vcjEyLmMubGVuY3Iub3JnLzkxLmNybDCCAQsGCisGAQQB\n" \
-"1nkCBAIEgfwEgfkA9wB2ANdtfRDRp/V3wsfpX9cAv/mCyTNaZeHQswFzF8DIxWl3\n" \
-"AAABnWVZpOoAAAQDAEcwRQIgTaNfb0dM+YvXfEat2Yb5SC7aTmQ1Zq897xwifGai\n" \
-"gjMCIQDRAvabapoPoK+VJci9nBB5w/vcX0SUmUlF2X2vryJJ2wB9AEavhj07PuWf\n" \
-"pXfeqCRdNrDZ7SKiI/Rhd0EilFLulVBfAAABnWVZpXoACAAABQADMwIRBAMARjBE\n" \
-"AiBTuPS20tVu/Hiw8VevhNgtCNasdCwV8cbOrgPjv9UJmAIgZgI47wh8JnNZ1J50\n" \
-"ZvPhN0aUMu2zoBy0DLuVyel9uogwDQYJKoZIhvcNAQELBQADggEBAEpWRXLB2tDv\n" \
-"pARh6N9d+QsJN2LiNLNsWilOE5SQqFGGFOLJp9ru8fZ6P7BYeNmx6r2JZvGuDdxS\n" \
-"gbRkqyNNHOIbfHmNY41OvBSP4Mql2fLghETXZgWNSZFGiMCwalTsMVSS6fxhdAm9\n" \
-"rXeCShp3xRuPAoL9qcUv5lE7oqHGUgBa/pUBcss9VAeJBCP43IxrZmVsbOsIS/7P\n" \
-"Q5U8GmiQsZaPo80BQMlGHgjpGE8s2o9ot85xDSHDhG4Nhm8bCdL/08aa9Mn1YUdd\n" \
-"ny+3nXdMoIqQjCreM7uSAO7MbIeHHD5LAlY8VhFxpNBAMtpFc766hifp5jRWp/Ki\n" \
-"/W6lwcki1qI=\n" \
+"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\n" \
+"bP6MvPJwNQzcmRk13NfIRmPVNnGuV/u3gm3c\n" \
 "-----END CERTIFICATE-----\n";
 void setup() {
   Serial.begin(115200);
@@ -60,10 +60,8 @@ void loop() {
     WiFiClientSecure *client = new WiFiClientSecure;
     
     if(client) {
-      // QUAN TRỌNG: Firebase dùng chứng chỉ của Google (GTS Root), 
-      // nhưng chữ ký root_ca phía trên là của Let's Encrypt (Nên 2 bên đụng độ sinh ra lỗi -9984).
-      // Giải pháp tốt nhất cho Firebase lúc này là dùng setInsecure() để bỏ qua xác thực đụng độ.
-      client->setInsecure();
+      // Sử dụng Root CA chuẩn của Google để bật tính năng chống Hacker (Man-in-the-Middle)
+      client->setCACert(root_ca);
       
       HTTPClient http;
 

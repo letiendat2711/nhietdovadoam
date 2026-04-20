@@ -110,6 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tempValueEl = document.getElementById('temp-value');
     const humValueEl = document.getElementById('hum-value');
+    const tempOldEl = document.getElementById('temp-old');
+    const humOldEl = document.getElementById('hum-old');
+    const tempTimeEl = document.getElementById('temp-time');
+    const humTimeEl = document.getElementById('hum-time');
     const statusIndicator = document.getElementById('mqtt-status');
     const statusText = document.getElementById('mqtt-status-text');
 
@@ -138,6 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const temp = parseFloat(data.temp);
                 const hum = parseFloat(data.hum);
 
+                const currentTempText = tempValueEl.textContent;
+                const currentHumText = humValueEl.textContent;
+
+                // Cập nhật giá trị cũ khi có thay đổi
+                if (currentTempText !== '--' && currentTempText !== temp.toFixed(1)) {
+                    tempOldEl.textContent = currentTempText;
+                }
+                if (currentHumText !== '--' && currentHumText !== hum.toFixed(1)) {
+                    humOldEl.textContent = currentHumText;
+                }
+
                 // Cập nhật giao diện số
                 tempValueEl.textContent = temp.toFixed(1);
                 humValueEl.textContent = hum.toFixed(1);
@@ -146,12 +161,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(temp >= 33) tempValueEl.classList.add('danger-value');
                 else tempValueEl.classList.remove('danger-value');
 
+                const now = new Date();
+                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                
+                // Cập nhật thời gian
+                tempTimeEl.textContent = timeStr;
+                humTimeEl.textContent = timeStr;
+
                 // Vẽ chart nếu dữ liệu mới có sự thay đổi (Bảo vệ hiệu năng web)
                 if(temp !== lastTemp || hum !== lastHum) {
-                    const now = new Date();
-                    const timeLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-                    
-                    updateChart(timeLabel, temp, hum);
+                    updateChart(timeStr, temp, hum);
                     
                     lastTemp = temp;
                     lastHum = hum;
