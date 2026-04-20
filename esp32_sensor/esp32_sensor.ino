@@ -105,15 +105,18 @@ void loop() {
 
       // ======================================
       // 6. Gửi lệnh POST dữ liệu sang History branch (/history.json)
-      // Khi mất mạng và chạy offline array, bạn duyệt mảng và đẩy vòng lặp POST này theo data.
+      // Chú ý: Ở vòng lặp lưu trữ bù offline, bạn dùng cấu trúc tương tự nhưng đổi status thành "offline"
       HTTPClient httpHistory;
       String historyPath = "https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app/history.json";
       httpHistory.begin(*client, historyPath);
       httpHistory.addHeader("Content-Type", "application/json");
       
-      int historyCode = httpHistory.POST(postData);
+      // Gắn nhãn online cho dữ liệu gửi qua mạng trực tiếp
+      String historyData = "{\"temp\":" + String(temp) + ",\"hum\":" + String(hum) + ",\"time\":\"" + timeString + "\",\"status\":\"online\"}";
+      
+      int historyCode = httpHistory.POST(historyData);
       if (historyCode > 0) {
-         Serial.println("Đã đẩy dữ liệu History. Mã: " + String(historyCode));
+         Serial.println("Đã đẩy dữ liệu History (Trực tiếp). Mã: " + String(historyCode));
       }
       httpHistory.end();
       // ======================================
