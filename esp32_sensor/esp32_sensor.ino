@@ -1,132 +1,152 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <SPIFFS.h> 
 #include <WiFiClientSecure.h>
 #include "time.h"
 
-// Thông tin kết nối
-const char* ssid = "226.1-226.2-226.3";
-const char* password = "0778844247zalo";
-
-// Đường dẫn nhận dữ liệu (ĐÚNG CHUẨN FIREBASE API)
+// ===== 1. CẤU HÌNH =====
+const char* ssid = "tai1";
+const char* password = "12345678";
 const char* serverName = "https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app/sensor.json";
+const char* historyUrl = "https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app/history.json";
 
-// Root CA của chứng chỉ Google Trust Services (GTS Root R1) dùng cho Firebase
-const char* root_ca = \
-"-----BEGIN CERTIFICATE-----\n" \
-"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\n" \
-"bP6MvPJwNQzcmRk13NfIRmPVNnGuV/u3gm3c\n" \
-"-----END CERTIFICATE-----\n";
+const char* logFile = "/offline_log.txt";
+unsigned long lastTime = 0;
+const long timerDelay = 20000; 
+
+const char* ntpServer = "time.google.com";
+const long  gmtOffset_sec = 7 * 3600;
+const int   daylightOffset_sec = 0;
+
+// Lấy chuỗi thời gian hiện tại
+String getTimeString() {
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)) return "0000-00-00 00:00:00";
+  char timeStringBuff[20];
+  strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  return String(timeStringBuff);
+}
+
+// --- Hàm gửi dữ liệu (Dùng setInsecure để sửa lỗi -9984) ---
+void postToWeb(String payload, bool isBuffered) {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  WiFiClientSecure client;
+  client.setInsecure(); // SỬA LỖI Ở ĐÂY: Chấp nhận kết nối HTTPS mà không cần check CA thủ công
+
+  HTTPClient http;
+
+  if(isBuffered) {
+    // 1. Nếu là dữ liệu xả bù (offline): Chỉ gắn nhãn offline và đẩy thẳng POST vào /history.json (Không đè số lớn PATCH nữa)
+    String offlinePayload = payload;
+    offlinePayload.replace("}", ",\"status\":\"offline\"}"); // Trích nhãn offline
+    
+    if (http.begin(client, historyUrl)) {
+      http.addHeader("Content-Type", "application/json");
+      int httpCode = http.POST(offlinePayload);
+      if (httpCode > 0) {
+        Serial.printf("[GUI BU OFFLINE] => Web OK | HTTP: %d\n", httpCode);
+      } else {
+        Serial.printf("[LOI OFFLINE] Ma: %d\n", httpCode);
+      }
+      http.end();
+    }
+  } else {
+    // 2. Nếu là dữ liệu chạy thực (online): Gửi cả PATCH và POST
+    
+    // 2.1 PATCH để cập nhật số đập vô mắt (sensor.json)
+    if (http.begin(client, serverName)) {
+      http.addHeader("Content-Type", "application/json");
+      http.PATCH(payload);
+      http.end();
+    }
+    
+    // 2.2 POST để lưu danh sách bảng lịch sử dưới web (history.json)
+    String onlinePayload = payload;
+    onlinePayload.replace("}", ",\"status\":\"online\"}"); // Trích nhãn online
+    
+    if (http.begin(client, historyUrl)) {
+      http.addHeader("Content-Type", "application/json");
+      int httpCode = http.POST(onlinePayload);
+      if (httpCode > 0) {
+        Serial.printf("[TRUC TIEP] => Web OK | Data: %s | HTTP: %d\n", payload.c_str(), httpCode);
+      } else {
+        Serial.printf("[LOI TRUC TIEP] Ma: %d\n", httpCode);
+      }
+      http.end();
+    }
+  }
+}
+
+// --- Hàm gửi bù dữ liệu ---
+void sendBufferedData() {
+  if (!SPIFFS.exists(logFile)) return;
+  File file = SPIFFS.open(logFile, FILE_READ);
+  if (!file || file.size() == 0) {
+    file.close(); SPIFFS.remove(logFile);
+    return;
+  }
+
+  Serial.println("\n>>> DANG DAY BU DU LIEU TU BO NHO DEM...");
+  while (file.available()) {
+    String line = file.readStringUntil('\n');
+    line.trim();
+    if (line.length() > 0) {
+      postToWeb(line, true);
+      delay(200); // Thêm delay nhỏ tránh Firebase từ chối do spam quá nhánh History
+    }
+  }
+  file.close();
+  SPIFFS.remove(logFile); 
+  Serial.println(">>> DA DAY XONG DU LIEU CU.\n");
+}
+
 void setup() {
   Serial.begin(115200);
-  
-  // 1. Kết nối WiFi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi Connected!");
+  if(!SPIFFS.begin(true)) return;
 
-  // Đồng bộ thời gian từ NTP Server cho múi giờ Việt Nam (GMT+7)
-  configTime(7 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.println("Đang đồng bộ thời gian...");
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting WiFi");
+  while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  while(!getLocalTime(&timeinfo)){ delay(500); Serial.print("?"); }
+  Serial.println("\nTime Synced: " + getTimeString());
 }
 
 void loop() {
-  // 2. Kiểm tra kết nối WiFi
-  if(WiFi.status() == WL_CONNECTED){
-    WiFiClientSecure *client = new WiFiClientSecure;
-    
-    if(client) {
-      // Sử dụng Root CA chuẩn của Google để bật tính năng chống Hacker (Man-in-the-Middle)
-      client->setCACert(root_ca);
-      
-      HTTPClient http;
-
-      // Tạo số random giả lập sensor
-      float temp = 20.0 + random(0, 150) / 10.0;
-      float hum = 40.0 + random(0, 400) / 10.0;
-
-      // Lấy thời gian hiện tại
-      struct tm timeinfo;
-      String timeString = "00:00:00";
-      if(getLocalTime(&timeinfo)){
-        char timeBuff[20];
-        strftime(timeBuff, sizeof(timeBuff), "%H:%M:%S", &timeinfo);
-        timeString = String(timeBuff);
-      }
-
-      // 3. Khởi tạo đối tượng JSON (String)
-      // Dạng: {"temp":25.5, "hum":50.2, "time":"14:30:00"}
-      String postData = "{\"temp\":" + String(temp) + ",\"hum\":" + String(hum) + ",\"time\":\"" + timeString + "\"}";
-
-      // 4. Bắt đầu phiên HTTPS
-      http.begin(*client, serverName);
-      
-      // Báo cho Firebase biết gói tin mình gửi lên có định dạng là JSON
-      http.addHeader("Content-Type", "application/json");
-      
-      // 5. Dùng phương thức PATCH để cập nhật thẻ trạng thái tĩnh (/sensor.json)
-      int httpResponseCode = http.PATCH(postData);
-      
-      if (httpResponseCode > 0) {
-        Serial.println("Đã cập nhật chỉ số báo! Response code: " + String(httpResponseCode));
-      } else {
-        Serial.println("Lỗi cập nhật mã: " + String(httpResponseCode));
-      }
-      http.end();
-
-      // ======================================
-      // 6. Gửi lệnh POST dữ liệu sang History branch (/history.json)
-      // Chú ý: Ở vòng lặp lưu trữ bù offline, bạn dùng cấu trúc tương tự nhưng đổi status thành "offline"
-      HTTPClient httpHistory;
-      String historyPath = "https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app/history.json";
-      httpHistory.begin(*client, historyPath);
-      httpHistory.addHeader("Content-Type", "application/json");
-      
-      // Gắn nhãn online cho dữ liệu gửi qua mạng trực tiếp
-      String historyData = "{\"temp\":" + String(temp) + ",\"hum\":" + String(hum) + ",\"time\":\"" + timeString + "\",\"status\":\"online\"}";
-      
-      int historyCode = httpHistory.POST(historyData);
-      if (historyCode > 0) {
-         Serial.println("Đã đẩy dữ liệu History (Trực tiếp). Mã: " + String(historyCode));
-      }
-      httpHistory.end();
-      // ======================================
-      
-      Serial.println("Đã gửi Nhiệt độ: " + String(temp) + " | Độ ẩm: " + String(hum));
+  static unsigned long lastReconnect = 0;
+  if (WiFi.status() != WL_CONNECTED) {
+    if (millis() - lastReconnect > 5000) {
+      lastReconnect = millis();
+      WiFi.begin(ssid, password);
     }
-    
-    // Rất quan trọng để tránh đầy bộ nhớ ESP32
-    delete client;
   }
-  
-  delay(3000); // Gửi mỗi 3 giây
+
+  if (millis() - lastTime > timerDelay) {
+    lastTime = millis();
+    String currentTime = getTimeString();
+    float t = 20.0 + random(0, 150) / 10.0;
+    float h = 40.0 + random(0, 400) / 10.0;
+    
+    // Giữ nguyên chuỗi payload do hàm sau nó sẽ tự xé đuôi thay thế nhãn
+    String payload = "{\"temp\":" + String(t) + ",\"hum\":" + String(h) + ",\"time\":\"" + currentTime + "\"}";
+
+    if (WiFi.status() == WL_CONNECTED) {
+      if (SPIFFS.exists(logFile)) {
+        sendBufferedData();
+      }
+      postToWeb(payload, false); 
+    } 
+    else {
+      // MẤT MẠNG - Lưu vào bộ nhớ flash
+      File file = SPIFFS.open(logFile, FILE_APPEND);
+      if (file) {
+        file.println(payload);
+        file.close();
+        Serial.printf("[OFFLINE] Mat mang! Luu: %s | Luc: %s\n", payload.c_str(), currentTime.c_str());
+      }
+    }
+  }
 }
