@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include "time.h"
 
 // Thông tin kết nối
 const char* ssid = "226.1-226.2-226.3";
@@ -52,6 +53,10 @@ void setup() {
     Serial.print(".");
   }
   Serial.println("\nWiFi Connected!");
+
+  // Đồng bộ thời gian từ NTP Server cho múi giờ Việt Nam (GMT+7)
+  configTime(7 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.println("Đang đồng bộ thời gian...");
 }
 
 void loop() {
@@ -69,9 +74,18 @@ void loop() {
       float temp = 20.0 + random(0, 150) / 10.0;
       float hum = 40.0 + random(0, 400) / 10.0;
 
+      // Lấy thời gian hiện tại
+      struct tm timeinfo;
+      String timeString = "00:00:00";
+      if(getLocalTime(&timeinfo)){
+        char timeBuff[20];
+        strftime(timeBuff, sizeof(timeBuff), "%H:%M:%S", &timeinfo);
+        timeString = String(timeBuff);
+      }
+
       // 3. Khởi tạo đối tượng JSON (String)
-      // Dạng: {"temp":25.5, "hum":50.2}
-      String postData = "{\"temp\":" + String(temp) + ",\"hum\":" + String(hum) + "}";
+      // Dạng: {"temp":25.5, "hum":50.2, "time":"14:30:00"}
+      String postData = "{\"temp\":" + String(temp) + ",\"hum\":" + String(hum) + ",\"time\":\"" + timeString + "\"}";
 
       // 4. Bắt đầu phiên HTTPS
       http.begin(*client, serverName);

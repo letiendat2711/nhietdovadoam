@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Biến lưu trữ giá trị cũ để tránh vẽ biểu đồ liên tục nếu dữ liệu không đổi
     let lastTemp = null;
     let lastHum = null;
+    let lastTime = null;
 
     // 3. Hàm lấy dữ liệu từ Firebase
     async function fetchFirebaseData() {
@@ -161,19 +162,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(temp >= 33) tempValueEl.classList.add('danger-value');
                 else tempValueEl.classList.remove('danger-value');
 
-                const now = new Date();
-                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                // Sử dụng thời gian từ ESP32 đẩy lên để đồng bộ (nếu có), nếu không có mới dùng giờ trình duyệt
+                let timeStr = "";
+                if (data.time) {
+                    timeStr = data.time;
+                } else {
+                    const now = new Date();
+                    timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                }
                 
                 // Cập nhật thời gian
                 tempTimeEl.textContent = timeStr;
                 humTimeEl.textContent = timeStr;
 
-                // Vẽ chart nếu dữ liệu mới có sự thay đổi (Bảo vệ hiệu năng web)
-                if(temp !== lastTemp || hum !== lastHum) {
+                // Vẽ chart nếu dữ liệu mới từ ESP32 có khoảng thời gian hoặc giá trị khác
+                if(temp !== lastTemp || hum !== lastHum || timeStr !== lastTime) {
                     updateChart(timeStr, temp, hum);
                     
                     lastTemp = temp;
                     lastHum = hum;
+                    lastTime = timeStr;
                 }
             }
         } catch (error) {
