@@ -1,97 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Chart.js Initialization
-    const ctx = document.getElementById('sensorChart').getContext('2d');
-    
-    // Gradient cho biểu đồ nhiệt độ
-    const tempGradient = ctx.createLinearGradient(0, 0, 0, 400);
-    tempGradient.addColorStop(0, 'rgba(239, 68, 68, 0.5)'); // Red
-    tempGradient.addColorStop(1, 'rgba(239, 68, 68, 0.05)');
+    const maxDataPoints = 50; // Giữ 50 bản ghi cho danh sách
 
-    // Gradient cho biểu đồ độ ẩm
-    const humGradient = ctx.createLinearGradient(0, 0, 0, 400);
-    humGradient.addColorStop(0, 'rgba(6, 182, 212, 0.5)'); // Cyan
-    humGradient.addColorStop(1, 'rgba(6, 182, 212, 0.05)');
-
-    // Dữ liệu ban đầu
-    const chartData = {
-        labels: [],
-        datasets: [
-            {
-                label: 'Nhiệt độ (°C)',
-                data: [],
-                borderColor: '#ef4444',
-                backgroundColor: tempGradient,
-                borderWidth: 2,
-                pointBackgroundColor: '#ef4444',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#ef4444',
-                fill: true,
-                tension: 0.4,
-                yAxisID: 'y'
-            },
-            {
-                label: 'Độ ẩm (%)',
-                data: [],
-                borderColor: '#06b6d4',
-                backgroundColor: humGradient,
-                borderWidth: 2,
-                pointBackgroundColor: '#06b6d4',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#06b6d4',
-                fill: true,
-                tension: 0.4,
-                yAxisID: 'y1'
-            }
-        ]
-    };
-
-    const config = {
-        type: 'line',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: '#f8fafc' }
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                }
-            },
-            scales: {
-                x: {
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { color: '#94a3b8' }
-                },
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { color: '#94a3b8' },
-                    title: { display: true, text: 'Nhiệt độ (°C)', color: '#94a3b8' }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    ticks: { color: '#94a3b8' },
-                    title: { display: true, text: 'Độ ẩm (%)', color: '#94a3b8' }
-                }
-            }
-        }
-    };
-
-    const sensorChart = new Chart(ctx, config);
-
-    const maxDataPoints = 20;
-
-    // Không dùng updateChart thêm từng phần tử nữa, vì chuyển qua đọc History array triệt để
 
     // 2. Firebase Variables & Elements
     const baseUrl = 'https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app';
@@ -172,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. Hàm lấy lịch sử biểu đồ 
+    // 4. Hàm lấy lịch sử làm bảng
     async function fetchHistoryData() {
         try {
             const response = await fetch(historyUrl, { cache: "no-store" });
@@ -180,26 +89,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const historyData = await response.json();
             
             if (historyData) {
-                // Firebase trả về object key:value, chuyển thành array
                 const entries = Object.values(historyData);
+                const tbody = document.getElementById('history-tbody');
+                tbody.innerHTML = '';
                 
-                // Reset lại mảng dữ liệu chart
-                chartData.labels = [];
-                chartData.datasets[0].data = [];
-                chartData.datasets[1].data = [];
-
-                entries.forEach(entry => {
-                    const t = parseFloat(entry.temp);
-                    const h = parseFloat(entry.hum);
+                // Đảo ngược mảng để bản ghi mới nhất hiển thị ở trên cùng
+                entries.reverse().forEach(entry => {
+                    const t = parseFloat(entry.temp).toFixed(1);
+                    const h = parseFloat(entry.hum).toFixed(1);
                     const time = entry.time || "--:--:--";
                     
-                    chartData.labels.push(time);
-                    chartData.datasets[0].data.push(t);
-                    chartData.datasets[1].data.push(h);
+                    const row = document.createElement('tr');
+                    
+                    // Chữ đỏ với nhiệt > 33
+                    const tempClass = t >= 33 ? 'danger-text' : '';
+
+                    row.innerHTML = `
+                        <td>${time}</td>
+                        <td class="${tempClass}">${t}</td>
+                        <td>${h}</td>
+                    `;
+                    tbody.appendChild(row);
                 });
-                
-                // Update chart không dùng cuộn hiệu ứng (tránh chớp tắt 3s 1 lần)
-                sensorChart.update('none');
+            } else {
+                // Nếu rỗng, hiển thị thông báo
+                const tbody = document.getElementById('history-tbody');
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">Chưa có dữ liệu trong kho History... Hãy mở ESP32 lên lại!</td></tr>`;
             }
         } catch (error) {
             console.error('History Fetch Error:', error);

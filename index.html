@@ -63,15 +63,29 @@
                 </div>
             </div>
 
-            <div class="chart-container">
-                <h2><i class="fa-solid fa-chart-line"></i> Biểu đồ lịch sử</h2>
-                <canvas id="sensorChart"></canvas>
+            <div class="list-container">
+                <h2><i class="fa-solid fa-list-ul"></i> Nhật ký Dữ liệu</h2>
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Nhiệt độ (°C)</th>
+                                <th>Độ ẩm (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                            <tr>
+                                <td colspan="3" style="text-align: center;">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </main>
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="app.js"></script>
 </body>

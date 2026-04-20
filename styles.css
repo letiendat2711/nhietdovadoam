@@ -174,17 +174,20 @@ header {
     font-weight: 500;
 }
 
-.chart-container {
+.list-container {
     background: var(--card-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     padding: 30px;
-    height: 450px;
+    max-height: 500px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.chart-container h2 {
+.list-container h2 {
     font-size: 1.2rem;
     color: var(--text-secondary);
     margin-bottom: 20px;
@@ -192,6 +195,57 @@ header {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.table-responsive {
+    overflow-y: auto;
+    flex-grow: 1;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Custom scrollbar for table */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 10px;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.history-table th {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    padding: 15px;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.history-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.history-table tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.danger-text {
+    color: var(--accent-red);
+    font-weight: bold;
 }
 
 /* Biến hoạt ảnh khẩn cấp nếu nhiệt độ quá cao (tuỳ biến) */
