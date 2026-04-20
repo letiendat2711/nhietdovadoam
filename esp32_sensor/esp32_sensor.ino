@@ -93,20 +93,32 @@ void loop() {
       // Báo cho Firebase biết gói tin mình gửi lên có định dạng là JSON
       http.addHeader("Content-Type", "application/json");
       
-      // 5. Dùng phương thức PATCH để cập nhật dữ liệu (Không dùng GET như web thường)
+      // 5. Dùng phương thức PATCH để cập nhật thẻ trạng thái tĩnh (/sensor.json)
       int httpResponseCode = http.PATCH(postData);
       
       if (httpResponseCode > 0) {
-        Serial.print("Đã tải lên Firebase! Response code: ");
-        Serial.println(httpResponseCode);
+        Serial.println("Đã cập nhật chỉ số báo! Response code: " + String(httpResponseCode));
+      } else {
+        Serial.println("Lỗi cập nhật mã: " + String(httpResponseCode));
       }
-      else {
-        Serial.print("Lỗi mã: ");
-        Serial.println(httpResponseCode);
+      http.end();
+
+      // ======================================
+      // 6. Gửi lệnh POST dữ liệu sang History branch (/history.json)
+      // Khi mất mạng và chạy offline array, bạn duyệt mảng và đẩy vòng lặp POST này theo data.
+      HTTPClient httpHistory;
+      String historyPath = "https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app/history.json";
+      httpHistory.begin(*client, historyPath);
+      httpHistory.addHeader("Content-Type", "application/json");
+      
+      int historyCode = httpHistory.POST(postData);
+      if (historyCode > 0) {
+         Serial.println("Đã đẩy dữ liệu History. Mã: " + String(historyCode));
       }
+      httpHistory.end();
+      // ======================================
       
       Serial.println("Đã gửi Nhiệt độ: " + String(temp) + " | Độ ẩm: " + String(hum));
-      http.end();
     }
     
     // Rất quan trọng để tránh đầy bộ nhớ ESP32

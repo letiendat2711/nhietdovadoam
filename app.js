@@ -91,22 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const maxDataPoints = 20;
 
-    function updateChart(timeLabel, tempVal, humVal) {
-        chartData.labels.push(timeLabel);
-        chartData.datasets[0].data.push(tempVal);
-        chartData.datasets[1].data.push(humVal);
-
-        if (chartData.labels.length > maxDataPoints) {
-            chartData.labels.shift();
-            chartData.datasets[0].data.shift();
-            chartData.datasets[1].data.shift();
-        }
-
-        sensorChart.update();
-    }
+    // Không dùng updateChart thêm từng phần tử nữa, vì chuyển qua đọc History array triệt để
 
     // 2. Firebase Variables & Elements
-    const firebaseUrl = 'https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app/sensor.json';
+    const baseUrl = 'https://nhietdovadoam-a983f-default-rtdb.asia-southeast1.firebasedatabase.app';
+    const firebaseUrl = `${baseUrl}/sensor.json`;
+    const historyUrl = `${baseUrl}/history.json?orderBy="$key"&limitToLast=${maxDataPoints}`;
 
     const tempValueEl = document.getElementById('temp-value');
     const humValueEl = document.getElementById('hum-value');
@@ -122,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastHum = null;
     let lastTime = null;
 
-    // 3. Hàm lấy dữ liệu từ Firebase
+    // 3. Hàm lấy dữ liệu Sensor (Chỉ số hiển thị to)
     async function fetchFirebaseData() {
         try {
             // Lấy dữ liệu dạng JSON (Thêm cache: no-store để không bị lưu rác dữ liệu cũ trên trình duyệt)
@@ -174,15 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Cập nhật thời gian
                 tempTimeEl.textContent = timeStr;
                 humTimeEl.textContent = timeStr;
-
-                // Vẽ chart nếu dữ liệu mới từ ESP32 có khoảng thời gian hoặc giá trị khác
-                if(temp !== lastTemp || hum !== lastHum || timeStr !== lastTime) {
-                    updateChart(timeStr, temp, hum);
-                    
-                    lastTemp = temp;
-                    lastHum = hum;
-                    lastTime = timeStr;
-                }
             }
         } catch (error) {
             console.error('Firebase Fetch Error: ', error);
@@ -191,8 +172,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. Khởi chạy
-    fetchFirebaseData(); // Gọi ngay khi load trang
-    setInterval(fetchFirebaseData, 3000); // Lặp lại mỗi 3 giây tương ứng độ trễ ESP32
+    // 4. Hàm lấy lịch sử biểu đồ 
+    async function fetchHistoryData() {
+        try {
+            const response = await fetch(historyUrl, { cache: "no-store" });
+            if (!response.ok) return;
+            const historyData = await response.json();
+            
+            if (historyData) {
+                // Firebase trả về object key:value, chuyển thành array
+                const entries = Object.values(historyData);
+                
+                // Reset lại mảng dữ liệu chart
+                chartData.labels = [];
+                chartData.datasets[0].data = [];
+                chartData.datasets[1].data = [];
+
+                entries.forEach(entry => {
+                    const t = parseFloat(entry.temp);
+                    const h = parseFloat(entry.hum);
+                    const time = entry.time || "--:--:--";
+                    
+                    chartData.labels.push(time);
+                    chartData.datasets[0].data.push(t);
+                    chartData.datasets[1].data.push(h);
+                });
+                
+                // Update chart không dùng cuộn hiệu ứng (tránh chớp tắt 3s 1 lần)
+                sensorChart.update('none');
+            }
+        } catch (error) {
+            console.error('History Fetch Error:', error);
+        }
+    }
+
+    // 5. Khởi chạy
+    fetchFirebaseData(); 
+    fetchHistoryData();
+
+    setInterval(() => {
+        fetchFirebaseData();
+        fetchHistoryData();
+    }, 3000); // Lặp lại mỗi 3 giây tương ứng độ trễ ESP32
 
 });
