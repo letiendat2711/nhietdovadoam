@@ -98,23 +98,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     const t = parseFloat(entry.temp).toFixed(1);
                     const h = parseFloat(entry.hum).toFixed(1);
                     const time = entry.time || "--:--:--";
+                    const status = entry.status || "online"; // Mặc định là online nếu không có
                     
                     const row = document.createElement('tr');
                     
                     // Chữ đỏ với nhiệt > 33
                     const tempClass = t >= 33 ? 'danger-text' : '';
 
+                    // Badge Trạng thái
+                    let badgeHtml = '';
+                    if (status === 'offline') {
+                        badgeHtml = '<span class="badge badge-offline"><i class="fa-solid fa-cloud-arrow-up"></i> Khôi phục</span>';
+                    } else {
+                        badgeHtml = '<span class="badge badge-online"><i class="fa-solid fa-wifi"></i> Trực tiếp</span>';
+                    }
+
                     row.innerHTML = `
                         <td>${time}</td>
                         <td class="${tempClass}">${t}</td>
                         <td>${h}</td>
+                        <td>${badgeHtml}</td>
                     `;
                     tbody.appendChild(row);
                 });
             } else {
                 // Nếu rỗng, hiển thị thông báo
                 const tbody = document.getElementById('history-tbody');
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">Chưa có dữ liệu trong kho History... Hãy mở ESP32 lên lại!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Chưa có dữ liệu trong kho History... Hãy mở ESP32 lên lại!</td></tr>`;
             }
         } catch (error) {
             console.error('History Fetch Error:', error);
